@@ -544,6 +544,177 @@ def get_legal_moves(state_deque, current_player_color):
         moves_id.append(move_action2move_id[move])
     return moves_id
 
+class Board(object):
+    def __init__(self):
+        self.state_list = copy.deepcopy(state_list_init)
+        self.game_start = False
+        self.winner = None
+        self.state_deque = copy.deepcopy(state_deque_init)
+    
+    def init_board(self, start_player=1):
+        """
+        :param start_player: 先手玩家 ID
+        """
+        self.start_player = start_player
+        if start_player == 1:
+            self.id2color = {1: "红", 2: "黑"}
+            self.color2id = {"红": 1, "黑": 2}
+            self.backhand_player = 2
+        elif start_player == 2:
+            self.id2color = {2: "红", 1: "黑"}
+            self.color2id = {"红": 2, "黑": 1}
+            self.backhand_player = 1
+        # 当前手玩家, 即先手玩家
+        self.current_player_color = "红"
+        self.current_player_id    = self.color2id["红"]
+        # 初始化棋盘
+        self.state_list = copy.deepcopy(state_list_init)
+        self.state_deque = copy.deepcopy(state_deque_init)
+        # 初始化最后 move
+        self.last_move = -1
+        # 记录游戏中吃子的回合数
+        self.kill_action = 0
+        self.game_start = False
+        # 游戏动作计数
+        self.action_count = 0
+        self.winner = None
+
+    @property
+    def availables(self):
+        """获取当前盘面所有合法走法"""
+        return get_legal_moves(self.state_deque, self.current_player_color)
+
+    def current_state(self):
+        """
+        使用 9 个特征表示棋盘
+        第 0-6 个特征表示不同棋子, 1 代表红, -1 代表黑
+        第 7 个特征表示对方最后一步落子位置, 走子之前为 -1, 走子之后为 1, 其余为 0
+        第 8 个特征表示本方是不是先手, 如果是先手, 那么全为 1, 否则全为 0
+        """
+        _current_state = np.zeros([9, 10, 9])
+        _current_state[:7] = state_list2state_array(self.state_deque[-1]).transpose([2, 0, 1]) # [7, 10, 9]
+        if self.game_start:
+            move = move_id2move_action[self.last_move]
+            start_position = int(move[0]), int(move[1])
+            end_position = int(move[2]), int(move[3])
+            _current_state[7][start_position[0]][start_position[1]] = -1
+            _current_state[7][end_position[0]][end_position[1]] = 1
+        if self.action_count % 2 == 0:
+            _current_state[8][:, :] = 1.0
+        return _current_state
+    
+    def do_move(self, move):
+        self.game_start = True
+        self.action_count += 1
+        move_action = move_id2move_action[move]
+        start_y, start_x = int(move_action[0]), int(move_action[1])
+        end_y, end_x = int(move_action[2]), int(move_action[3])
+        state_list = copy.deepcopy(self.state_deque[-1])
+
+        if state_list[end_y][end_x] != "一一":
+            self.kill_action = 0
+            if self.current_player_color == "黑" and state_list[end_y][end_x] == "红帅":
+                self.winner = self.color2id["黑"]
+            elif self.current_player_color == "红" and state_list[end_y][end_x] == "黑帅":
+                self.winner = self.color2id["红"]
+        else:
+            self.kill_action += 1
+        
+        state_list[end_y][end_x] = state_list[start_y][start_x]
+        state_list[start_y][start_x] = "一一"
+        self.current_player_color = "黑" if self.current_player_color == "红" else "红"
+        self.current_player_id = 1 if self.current_player_id == 2 else 2
+    
+    def has_a_winner(self):
+        """一共三种状态: 红赢, 黑赢, 和棋"""
+        if self.winner is not None:
+            return True, self.winner
+        # 先手判负
+        elif self.kill_action >= CONFIG["kill_action"]:
+            return True, self.backhand_player
+        return False, -1
+    
+    def game_end(self):
+        win, winner = self.has_a_winner()
+        if win:
+            return True, winner
+        elif self.kill_action >= CONFIG["kill_action"]:
+            return True, -1
+        return False, -1
+    
+    def get_current_player_color(self):
+        return self.current_player_color
+    
+    def get_current_player_id(self):
+        return self.current_player_id
+
+class Game(object):
+    def __init__(self, board):
+        self.board = board
+    
+    def graphic(self, board, player1_color, player2_color):
+        print("player1 take:", player1_color)
+        print("player2 take:", player2_color)
+        print_board(sstate_list2state_array(board.state_deque[-1]))
+
+    def start_play(self, player1, player2, start_player=1, is_shown=1):
+        if start_player not in (1, 2):
+            raise Exception("start_player must be either 1 or 2")
+        self.board.init_board(start_player)
+        p1, p2 = 1, 2
+        player1.set_player_ind(1)
+        player2.set_player_ind(2)
+        players = {p1: player1, p2: player2}
+        if is_shown:
+            self.graphic(self.board, player1.player, player2.player)
+        
+        while True:
+            current_player = self.board.get_current_player_id()
+            player_in_turn = players[current_player]
+            move = player_in_turn.get_action(self.board)
+            self.board.do_move(move)
+            if is_shown:
+                self.graphic(self.board, player1.player, player2.player)
+            end, winner = self.board.game_end()
+            if end:
+                if winner != -1:
+                    print("Game end. Winner is ", players[winner])
+                else:
+                    print("Game end. Tie!")
+                return winner
+    
+    def start_self_play(self, player, is_shown=False, temp=1e-3):
+        self.board.init_board()
+        p1, p2 = 1, 2
+        states, mcts_probs, current_players = [], [], []
+        _count = 0
+        while True:
+            _count += 1
+            if _count % 20 == 0:
+                start_time = time.time()
+                move, move_probs = player.get_action(self.board, temp=temp, return_prob=1)
+                print("走一步要花: ", time.time() - start_time)
+            else:
+                move, move_probs = player.get_action(self.board, temp=temp, return_prob=1)
+            states.append(self.board.current_state())
+            mcts_probs.append(move_probs)
+            current_players.append(self.board.current_player_id)
+            # 走子
+            self.board.do_move(move)
+            end, winner = self.board.game_end()
+            if end:
+                winner_z = np.zeros(len(current_players))
+                if winner != -1:
+                    winner_z[np.array(current_players) == winner] = 1.0
+                    winner_z[np.array(current_players) != winner] = -1.0
+                player.reset_player()
+                if is_shown:
+                    if winner != -1:
+                        print("Game end. Winner is ", winner)
+                    else:
+                        print("Game end. Tie!")
+                return winner, zip(states, mcts_probs, winner_z)
+
 
 if __name__ == '__main__':
     # _array = np.array([1, 0, 0, 0, 0, 0, 0])
