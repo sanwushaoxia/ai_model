@@ -4,7 +4,7 @@ import numpy as np
 from collections import deque
 from config import CONFIG
 
-# 初始棋盘
+# 棋盘初始状态, 使用时需要对其进行深拷贝
 state_list_init = [['红车', '红马', '红象', '红士', '红帅', '红士', '红象', '红马', '红车'],
                    ['一一', '一一', '一一', '一一', '一一', '一一', '一一', '一一', '一一'],
                    ['一一', '红炮', '一一', '一一', '一一', '一一', '一一', '红炮', '一一'],
@@ -16,11 +16,12 @@ state_list_init = [['红车', '红马', '红象', '红士', '红帅', '红士', 
                    ['一一', '一一', '一一', '一一', '一一', '一一', '一一', '一一', '一一'],
                    ['黑车', '黑马', '黑象', '黑士', '黑帅', '黑士', '黑象', '黑马', '黑车']]
 
+# 长度为4, 用于记录之前4次棋盘的状态, 避免双方循环相同的走法
 state_deque_init = deque(maxlen=4)
 for _ in range(4):
     state_deque_init.append(copy.deepcopy(state_list_init))
 
-# 字典: 对棋子进行 onehot 编码
+# 字典: 对棋子进行 onehot 编码, 将字符串映射为数组, 红色棋子用1表示, 黑色棋子用-1表示
 string2array = dict(红车=np.array([1, 0, 0, 0, 0, 0, 0]), 黑车=np.array([-1, 0, 0, 0, 0, 0, 0]),
                     红马=np.array([0, 1, 0, 0, 0, 0, 0]), 黑马=np.array([0, -1, 0, 0, 0, 0, 0]),
                     红象=np.array([0, 0, 1, 0, 0, 0, 0]), 黑象=np.array([0, 0, -1, 0, 0, 0, 0]),
@@ -30,12 +31,20 @@ string2array = dict(红车=np.array([1, 0, 0, 0, 0, 0, 0]), 黑车=np.array([-1,
                     红兵=np.array([0, 0, 0, 0, 0, 0, 1]), 黑兵=np.array([0, 0, 0, 0, 0, 0, -1]),
                     一一=np.array([0, 0, 0, 0, 0, 0, 0]))
 
-# 获取 onehot 编码对应的棋子
+# 获取 onehot 编码对应的棋子, 为 string2array 的逆映射
 def array2string(array):
+    """
+    :param array: numpy数组
+    """
     return list(filter(lambda string: (string2array[string] == array).all(), string2array))[0]
 
-# 返回对当前棋盘 state_list 进行 move 操作后的棋盘
-def change_state(state_list, move):
+# 返回对当前棋盘 state_list 进行 move 操作后的棋盘, 既适用于吃子, 也适用于不吃子
+def change_state(state_list, move: str):
+    """
+    :param state_list: 棋盘, 二维list, 例如 state_list_init
+    :param move:       字符串, 第一个字符表示源y轴坐标, 第二个字符表示源x轴坐标, 第三个字符表示目的y坐标, 第四个字符表示目的x坐标,
+                       对于棋盘, 左上角为原点, 向下为y轴正方向, 向右为x轴正方向
+    """
     copy_list = copy.deepcopy(state_list)
     y, x, toy, tox = int(move[0]), int(move[1]), int(move[2]), int(move[3])
     copy_list[toy][tox] = copy_list[y][x]
@@ -44,18 +53,24 @@ def change_state(state_list, move):
 
 # 对使用 onehot 编码的棋盘进行解码
 def print_board(_state_array):
+    """
+    :param _state_array: numpy数组
+    """
     board_line = []
-    for i in range(10):
-        for j in range(9):
+    for i in range(10): # y轴长度
+        for j in range(9): # x轴长度
             board_line.append(array2string(_state_array[i][j]))
         print(board_line)
         board_line.clear()
 
 # 对棋盘进行 onehot 编码
 def state_list2state_array(state_list):
-    _state_array = np.zeros([10, 9, 7])
-    for i in range(10):
-        for j in range(9):
+    """
+    :param state_list: 二维list
+    """
+    _state_array = np.zeros([10, 9, 7]) # H * W * C
+    for i in range(10): # y轴长度
+        for j in range(9): # x轴长度
             _state_array[i][j] = string2array[state_list[i][j]]
     return _state_array
 
