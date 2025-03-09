@@ -384,7 +384,7 @@ def get_legal_moves(state_deque, current_player_color):
     state_list = state_deque[-1] # 最新棋盘
     old_state_list = state_deque[-4]
     moves = [] # 记录棋盘上所有棋子的合理走法
-    face_to_face = False
+    face_to_face = False # 红帅与黑帅在没有其它棋子的同一条线上
 
     black_x = None # 记录黑帅的位置
     black_y = None # 记录黑帅的位置
@@ -465,13 +465,15 @@ class Board(object):
         # 初始化棋盘
         self.state_list = copy.deepcopy(state_list_init)
         self.state_deque = copy.deepcopy(state_deque_init)
-        # 初始化最后 move
+        # 记录对方最后 move_id
         self.last_move = -1
-        # 记录游戏中吃子的回合数
+        # 记录游戏中2次吃子间隔的回合数
         self.kill_action = 0
+        # 记录游戏是否开始
         self.game_start = False
         # 游戏动作计数
         self.action_count = 0
+        # 记录胜者的玩家id
         self.winner = None
 
     @property
@@ -498,10 +500,10 @@ class Board(object):
             _current_state[8][:, :] = 1.0
         return _current_state
     
-    def do_move(self, move):
+    def do_move(self, move_id):
         self.game_start = True
         self.action_count += 1
-        move_action = move_id2move_action[move]
+        move_action = move_id2move_action[move_id]
         start_y, start_x = int(move_action[0]), int(move_action[1])
         end_y, end_x = int(move_action[2]), int(move_action[3])
         state_list = copy.deepcopy(self.state_deque[-1])
@@ -520,21 +522,13 @@ class Board(object):
         self.current_player_color = "黑" if self.current_player_color == "红" else "红"
         self.current_player_id = 1 if self.current_player_id == 2 else 2
     
-    def has_a_winner(self):
+    def game_end(self):
         """一共三种状态: 红赢, 黑赢, 和棋"""
         if self.winner is not None:
             return True, self.winner
-        # 先手判负
+        # 先手判负: 若2次吃子间隔的回合数大于等于阈值, 则后手判胜
         elif self.kill_action >= CONFIG["kill_action"]:
             return True, self.backhand_player
-        return False, -1
-    
-    def game_end(self):
-        win, winner = self.has_a_winner()
-        if win:
-            return True, winner
-        elif self.kill_action >= CONFIG["kill_action"]:
-            return True, -1
         return False, -1
     
     def get_current_player_color(self):
@@ -544,15 +538,19 @@ class Board(object):
         return self.current_player_id
 
 class Game(object):
-    def __init__(self, board):
+    def __init__(self, board: Board):
         self.board = board
     
-    def graphic(self, board, player1_color, player2_color):
+    def graphic(self, board: Board, player1_color, player2_color):
         print("player1 take:", player1_color)
         print("player2 take:", player2_color)
-        print_board(sstate_list2state_array(board.state_deque[-1]))
+        print_board(state_list2state_array(board.state_deque[-1]))
 
+    # 等实现 MCTSPlayer 类后再看
     def start_play(self, player1, player2, start_player=1, is_shown=1):
+        """
+        :param start_player: 先手玩家 ID
+        """
         if start_player not in (1, 2):
             raise Exception("start_player must be either 1 or 2")
         self.board.init_board(start_player)
@@ -572,12 +570,10 @@ class Game(object):
                 self.graphic(self.board, player1.player, player2.player)
             end, winner = self.board.game_end()
             if end:
-                if winner != -1:
-                    print("Game end. Winner is ", players[winner])
-                else:
-                    print("Game end. Tie!")
+                print("Game end. Winner is ", players[winner])
                 return winner
     
+    # 等实现 MCTSPlayer 类后再看
     def start_self_play(self, player, is_shown=False, temp=1e-3):
         self.board.init_board()
         p1, p2 = 1, 2
@@ -622,8 +618,8 @@ if __name__ == '__main__':
     # _state_list = copy.deepcopy(state_list_init)
     # print_board(state_list2state_array(_state_list))
 
-    # move_id2move_action, move_action2move_id = get_all_legal_moves()
-    # print(len(move_id2move_action), len(move_action2move_id))
+    move_id2move_action, move_action2move_id = get_all_legal_moves()
+    print(len(move_id2move_action), len(move_action2move_id))
 
     # print(flip_map('0122'))
 
@@ -631,7 +627,7 @@ if __name__ == '__main__':
     # print(len(moves))
     # print([move_id2move_action[id] for id in moves])
 
-    moves = get_legal_moves(state_deque_init, '红')
+    moves = get_legal_moves(state_deque_init, '黑')
     print(len(moves))
     print([move_id2move_action[id] for id in moves])
 
