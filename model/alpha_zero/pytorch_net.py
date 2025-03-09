@@ -1,8 +1,8 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.amp import autocast
-import numpy as np
 from config import CONFIG
 from game import Board
 
@@ -111,6 +111,9 @@ class PolicyValueNet:
         return probs, score.detach().numpy()
 
     def policy_value_fn(self, board: Board):
+        """
+        输入盘面, 返回走子到落子概率的映射以及盘面评估得分
+        """
         # eval 模式, 对 BatchNorm 等模块有影响
         self.policy_value_net.eval()
         # 获取当前盘面的合法走子 list

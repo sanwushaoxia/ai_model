@@ -1,7 +1,6 @@
-
 import copy, time
-import numpy as np
 from collections import deque
+import numpy as np
 from config import CONFIG
 
 # 棋盘初始状态, 使用时需要对其进行深拷贝
