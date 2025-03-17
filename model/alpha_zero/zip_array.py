@@ -1,23 +1,10 @@
 import numpy as np
 
-num2array = dict({1: np.array([1, 0, 0, 0, 0, 0, 0]), 2: np.array([0, 1, 0, 0, 0, 0, 0]),
-                  3: np.array([0, 0, 1, 0, 0, 0, 0]), 4: np.array([0, 0, 0, 1, 0, 0, 0]),
-                  5: np.array([0, 0, 0, 0, 1, 0, 0]), 6: np.array([0, 0, 0, 0, 0, 1, 0]),
-                  7: np.array([0, 0, 0, 0, 0, 0, 1]), 8: np.array([-1, 0, 0, 0, 0, 0, 0]),
-                  9: np.array([0, -1, 0, 0, 0, 0, 0]), 10: np.array([0, 0, -1, 0, 0, 0, 0]),
-                  11: np.array([0, 0, 0, -1, 0, 0, 0]), 12: np.array([0, 0, 0, 0, -1, 0, 0]),
-                  13: np.array([0, 0, 0, 0, 0, -1, 0]), 14: np.array([0, 0, 0, 0, 0, 0, -1])})
-
-def array2num(array):
-    return list(filter(lambda num: (num2array[num] == array).all(), num2array))[0]
-
-def state_list2state_num_array(state_list):
-    _state_array = np.zeros([10, 9, 7])
-    for i in range(10):
-        for j in range(9):
-            _state_array[i][j] = num2array[state_list[i][j]]
-
-def zip_array(array, data=0.):
+def zip_array(array: np.array, data=0.):
+    """
+    压缩二维数组
+    array: 被压缩的二维数组
+    """
     zip_res = []
     zip_res.append([len(array), len(array[0]), 0])
     for i in range(len(array)):
@@ -27,12 +14,19 @@ def zip_array(array, data=0.):
     return np.array(zip_res)
 
 def recovery_array(array, data=0.):
+    """
+    解压二维数组
+    array: 被解压的二维数组
+    """
     recovery_res = []
-    for i in range(array[0][0]):
-        recovery_res.append([data for j in range(array[0][1])])
+    # array[0][0] 为二维数组的行数
+    for i in range(int(array[0][0])):
+        # array[0][1] 为二维数组的列数
+        recovery_res.append([data for _ in range(int(array[0][1]))])
     for i in range(1, len(array)):
-        recovery_res[array[i][0]][array[i][1]] = array[i][2]
-    return np.array(recovery_array)
+        # array[i][0] 为行指标, array[i][1] 为列指标, array[i][2] 为值
+        recovery_res[int(array[i][0])][int(array[i][1])] = array[i][2]
+    return np.array(recovery_res)
 
 def zip_state_mcts_prob(tuple):
     state, mcts_prob, winner = tuple
@@ -50,3 +44,7 @@ def recovery_state_mcts_prob(tuple):
     mcts_prob = mcts_prob.reshape(2086)
     return state, mcts_prob, winner
 
+if __name__ == "__main__":
+    I = np.eye(3)
+    print(zip_array(I))
+    print(recovery_array(zip_array(I)))

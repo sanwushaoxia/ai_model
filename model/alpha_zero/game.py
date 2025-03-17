@@ -571,38 +571,37 @@ class Game(object):
             if end:
                 print("Game end. Winner is ", players[winner])
                 return winner
-    
-    # 等实现 MCTSPlayer 类后再看
+
     def start_self_play(self, player, is_shown=False, temp=1e-3):
+        """
+        开始自我博弈, 并收集数据
+        """
         self.board.init_board()
-        p1, p2 = 1, 2
         states, mcts_probs, current_players = [], [], []
         _count = 0
         while True:
             _count += 1
             if _count % 20 == 0:
                 start_time = time.time()
-                move, move_probs = player.get_action(self.board, temp=temp, return_prob=1)
+                move, moves_id2probs = player.get_action(self.board, temp=temp, return_prob=1)
                 print("走一步要花: ", time.time() - start_time)
             else:
-                move, move_probs = player.get_action(self.board, temp=temp, return_prob=1)
+                move, moves_id2probs = player.get_action(self.board, temp=temp, return_prob=1)
+            # 将当前棋盘添加至列表中
             states.append(self.board.current_state())
-            mcts_probs.append(move_probs)
+            # 将当前棋盘可行的走子及对应概率添加至列表中
+            mcts_probs.append(moves_id2probs)
+            # 将当前走子的玩家 ID 添加至列表中
             current_players.append(self.board.current_player_id)
             # 走子
             self.board.do_move(move)
             end, winner = self.board.game_end()
             if end:
-                winner_z = np.zeros(len(current_players))
-                if winner != -1:
-                    winner_z[np.array(current_players) == winner] = 1.0
-                    winner_z[np.array(current_players) != winner] = -1.0
+                winner_z = np.ones(len(current_players))
+                winner_z[np.array(current_players) != winner] = -1.0
                 player.reset_player()
                 if is_shown:
-                    if winner != -1:
-                        print("Game end. Winner is ", winner)
-                    else:
-                        print("Game end. Tie!")
+                    print("Game end. Winner is ", winner)
                 return winner, zip(states, mcts_probs, winner_z)
 
 

@@ -106,7 +106,7 @@ class MCTS(object):
 
     def get_move_probs(self, state: Board, temp=1e-3):
         """
-        按顺序运行所有搜索并返回可用的动作及相应的概率
+        按顺序运行所有搜索并返回可行的动作及相应的概率
         :param state: 盘面
         :param temp: 介于(0, 1]之间的温度参数
         """
@@ -150,6 +150,7 @@ class MCTSPlayer(object):
     def get_action(self, board: Board, temp=1e-3, return_prob=0):
         # 2086 表示所有合法的走子数量
         moves_id2probs = np.zeros(2086)
+        # acts 表示可行的动作, probs 表示相应的概率
         acts, probs = self.mcts.get_move_probs(board, temp)
         # 依据当前搜索树, 给出所有可能的走子概率
         moves_id2probs[list(acts)] = probs
