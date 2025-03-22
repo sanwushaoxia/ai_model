@@ -89,7 +89,7 @@ class MCTS(object):
             moves_id, node = node.select(self._c_puct)
             state.do_move(moves_id)
         
-        moves_id2probs, leaf_value = self._policy(self._c_puct)
+        moves_id2probs, leaf_value = self._policy(state)
         end, winner = state.game_end()
         if not end:
             node.expand(moves_id2probs)
@@ -155,7 +155,7 @@ class MCTSPlayer(object):
         # 依据当前搜索树, 给出所有可能的走子概率
         moves_id2probs[list(acts)] = probs
         if self._is_selfplay:
-            # 使用 Dirichlet Noise 自我博弈
+            # 使用 Dirichlet Noise, 以增强探索
             move = np.random.choice(
                 acts,
                 p=0.75*probs + 0.25*np.random.dirichlet(CONFIG['dirichlet'] * np.ones(len(probs)))

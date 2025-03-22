@@ -122,7 +122,7 @@ class PolicyValueNet:
         current_state = np.ascontiguousarray(board.current_state().reshape(-1, 9, 10, 9)).astype('float16')
         current_state = torch.as_tensor(current_state).to(self.device)
 
-        with autocast():
+        with autocast("cuda"):
             log_probs, score = self.policy_value_net(current_state)
         log_probs, score = log_probs.cpu(), score.cpu()
         # flatten 将数据拉成一维

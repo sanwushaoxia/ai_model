@@ -2,6 +2,7 @@ import copy, time
 from collections import deque
 import numpy as np
 from config import CONFIG
+# from mcts import MCTSPlayer
 
 # 棋盘初始状态, 使用时需要对其进行深拷贝
 state_list_init = [['红车', '红马', '红象', '红士', '红帅', '红士', '红象', '红马', '红车'],
@@ -515,11 +516,14 @@ class Board(object):
                 self.winner = self.color2id["红"]
         else:
             self.kill_action += 1
-        
+        # 更改棋盘状态
         state_list[end_y][end_x] = state_list[start_y][start_x]
         state_list[start_y][start_x] = "一一"
         self.current_player_color = "黑" if self.current_player_color == "红" else "红"
         self.current_player_id = 1 if self.current_player_id == 2 else 2
+        # 记录最后一次移动
+        self.last_move = move_id
+        self.state_deque.append(state_list)
     
     def game_end(self):
         """一共三种状态: 红赢, 黑赢, 和棋"""
