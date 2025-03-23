@@ -7,7 +7,7 @@ CONFIG = {
     "paddle_model_path": "current_policy.model", # paddle 模型路径
     "pytorch_model_path": "current_policy.pkl",  # pytorch 模型路径
     "train_data_buffer_path": "train_data_buffer.pkl", # 训练数据路径
-    "batch_size": 512,
+    "batch_size": 1024,
     "kl_targ": 0.02, # 控制 KL 散度的参数
     "epochs": 5,
     "game_batch_num": 3000, # 训练时, 更新模型的次数
