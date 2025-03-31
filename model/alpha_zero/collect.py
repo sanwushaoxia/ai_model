@@ -2,8 +2,8 @@
 from collections import deque
 import copy, os, pickle, time
 
-from game import Board, Game, move_action2move_id, move_id2move_action, flip_map
-from mcts import MCTSPlayer
+from game import Board, move_action2move_id, move_id2move_action, flip_map
+from mcts import MCTSPlayer, Game
 import zip_array
 from config import CONFIG
 
@@ -115,11 +115,8 @@ class CollectPipeline:
         except KeyboardInterrupt:
             print("\r\nquit")
 
-if CONFIG['use_frame'] == "paddle":
-    collecting_pipeline = CollectPipeline(init_model="current_policy.model")
-    collecting_pipeline.run()
-elif CONFIG['use_frame'] == 'pytorch':
-    collecting_pipeline = CollectPipeline(init_model="current_policy.pkl")
+if CONFIG['use_frame'] == 'pytorch':
+    collecting_pipeline = CollectPipeline()
     collecting_pipeline.run()
 else:
     print("暂不支持您选择的框架")

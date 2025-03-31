@@ -10,6 +10,7 @@ CONFIG = {
     "batch_size": 1024,
     "kl_targ": 0.02, # 控制 KL 散度的参数
     "epochs": 5,
-    "game_batch_num": 3000, # 训练时, 更新模型的次数
+    "game_batch_num": 1000, # 训练时, 更新模型的次数
     "use_frame": "pytorch", # 使用的深度学习框架
+    "lr": 1e-4, # 学习率
 }

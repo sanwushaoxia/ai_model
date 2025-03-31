@@ -1,7 +1,7 @@
-import copy
+import copy, time
 import numpy as np
 from config import CONFIG
-from game import Board
+from game import print_board, state_list2state_array, Board, move_id2move_action
 
 def softmax(x):
     probs = np.exp(x - np.max(x))
@@ -100,9 +100,10 @@ class MCTS(object):
                 leaf_value = (
                     1.0 if winner == state.get_current_player_id() else -1.0
                 )
-        # 源代码使用 -leaf_value 进行递归更新, 当 winner == state.get_current_player_id()
-        # 理应对该节点有正向作用, 使用 1.0 而非 -1.0 进行更新
-        node.update_recursive(leaf_value)
+        # 必须使用 -leaf_value 进行递归更新, 原因在于 state.do_move 后,
+        # state.get_current_player_id 会更新, 即若 winner == current_player_id,
+        # 则表示当前走子导致输棋, 当前节点对当前玩家的价值降低.
+        node.update_recursive(-leaf_value)
 
     def get_move_probs(self, state: Board, temp=1e-3):
         """
@@ -134,6 +135,12 @@ class MCTS(object):
     def __str__(self):
         return "MCTS"
 
+def move2idx(move, acts):
+    for i in range(len(acts)):
+        if acts[i] == move:
+            return i
+    return None
+
 class MCTSPlayer(object):
     def __init__(self, policy_value_function, c_puct=5, n_playout=2000, is_selfplay=0):
         self.mcts = MCTS(policy_value_function, c_puct, n_playout)
@@ -141,7 +148,7 @@ class MCTSPlayer(object):
         self.agent = "AI"
     
     def set_player_ind(self, p):
-        self.player = p
+        self.player_id = p
     
     def reset_player(self):
         """生成新的树"""
@@ -164,8 +171,89 @@ class MCTSPlayer(object):
         else:
             # 非自我博弈时, 由于双方交替走子, 所以本次使用的搜索树和下次使用的搜索树不易共用
             move = np.random.choice(acts, p=probs)
+            print("idx: ", move2idx(move, acts))
+            print("move_id: ", move)
+            print("move_action: ", move_id2move_action[move])
+            print("acts: ", acts)
+            print("probs: ", probs)
             self.mcts.update_with_move(-1)
         if return_prob:
             return move, moves_id2probs
         else:
             return move
+
+class Game(object):
+    def __init__(self, board: Board):
+        self.board = board
+    
+    def graphic(self, board: Board, player1_id, player2_id):
+        """
+        param: board     : 需要图形化最新棋盘的棋盘类
+        param: player1_id: 玩家 1 使用的颜色
+        param: player2_id: 玩家 2 使用的颜色
+        """
+        print("player1 take:", player1_id)
+        print("player2 take:", player2_id)
+        print_board(state_list2state_array(board.state_deque[-1]))
+
+    # 等实现 MCTSPlayer 类后再看
+    def start_play(self, player1: MCTSPlayer, player2: MCTSPlayer, start_player=1, is_shown=1):
+        """
+        :param player1     : 使用 ID=1 的玩家
+        :param player2     : 使用 ID=2 的玩家
+        :param start_player: 先手玩家 ID
+        :param is_shown    : 1 表示每次移动后打印最新的棋盘
+        返回赢家的 ID
+        """
+        if start_player not in (1, 2):
+            raise Exception("start_player must be either 1 or 2")
+        self.board.init_board(start_player)
+        player1.set_player_ind(1)
+        player2.set_player_ind(2)
+        player_id2player = {1: player1, 2: player2}
+        if is_shown:
+            self.graphic(self.board, player1.player_id, player2.player_id)
+        
+        while True:
+            current_player_id = self.board.get_current_player_id()
+            player_in_turn = player_id2player[current_player_id]
+            move = player_in_turn.get_action(self.board)
+            self.board.do_move(move)
+            if is_shown:
+                self.graphic(self.board, player1.player_id, player2.player_id)
+            end, winner = self.board.game_end()
+            if end:
+                print("Game end. Winner is ", player_id2player[winner])
+                return winner
+
+    def start_self_play(self, player: MCTSPlayer, is_shown=False, temp=1e-3):
+        """
+        开始自我博弈, 并收集数据
+        """
+        self.board.init_board()
+        states, mcts_probs, current_players = [], [], []
+        _count = 0
+        while True:
+            _count += 1
+            if _count % 20 == 0:
+                start_time = time.time()
+                move, moves_id2probs = player.get_action(self.board, temp=temp, return_prob=1)
+                print("走一步要花: ", time.time() - start_time)
+            else:
+                move, moves_id2probs = player.get_action(self.board, temp=temp, return_prob=1)
+            # 将当前棋盘添加至列表中
+            states.append(self.board.current_state())
+            # 将当前棋盘可行的走子及对应概率添加至列表中
+            mcts_probs.append(moves_id2probs)
+            # 将当前走子的玩家 ID 添加至列表中
+            current_players.append(self.board.current_player_id)
+            # 走子
+            self.board.do_move(move)
+            end, winner = self.board.game_end()
+            if end:
+                winner_z = np.ones(len(current_players))
+                winner_z[np.array(current_players) != winner] = -1.0
+                player.reset_player()
+                if is_shown:
+                    print("Game end. Winner is ", winner)
+                return winner, zip(states, mcts_probs, winner_z)

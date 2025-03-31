@@ -94,7 +94,7 @@ class PolicyValueNet:
         # 使用设备
         self.device = device
         self.policy_value_net = Net().to(self.device)
-        self.optimizer = torch.optim.Adam(params=self.policy_value_net.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=2e-3)
+        self.optimizer = torch.optim.Adam(params=self.policy_value_net.parameters(), lr=CONFIG["lr"], betas=(0.9, 0.999), eps=1e-8, weight_decay=2e-3)
         if model_file:
             self.policy_value_net.load_state_dict(torch.load(model_file))
 
@@ -134,7 +134,7 @@ class PolicyValueNet:
     def save_model(self, model_file):
         torch.save(self.policy_value_net.state_dict(), model_file)
 
-    def train_step(self, state_batch, mcts_probs, winner_batch, lr=0.002):
+    def train_step(self, state_batch, mcts_probs, winner_batch, lr=1e-4):
         # train 模式, 对 BatchNorm 等模块有影响
         self.policy_value_net.train()
 

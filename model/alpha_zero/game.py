@@ -57,10 +57,11 @@ def print_board(_state_array):
     :param _state_array: numpy数组
     """
     board_line = []
+    print("   [   0  ,   1   ,   2   ,   3   ,   4   ,   5   ,   6   ,   7   ,   8   ]")
     for i in range(10): # y轴长度
         for j in range(9): # x轴长度
             board_line.append(array2string(_state_array[i][j]))
-        print(board_line)
+        print("{} ".format(i), board_line)
         board_line.clear()
 
 # 对棋盘进行 onehot 编码
@@ -539,74 +540,6 @@ class Board(object):
     
     def get_current_player_id(self):
         return self.current_player_id
-
-class Game(object):
-    def __init__(self, board: Board):
-        self.board = board
-    
-    def graphic(self, board: Board, player1_color, player2_color):
-        print("player1 take:", player1_color)
-        print("player2 take:", player2_color)
-        print_board(state_list2state_array(board.state_deque[-1]))
-
-    # 等实现 MCTSPlayer 类后再看
-    def start_play(self, player1, player2, start_player=1, is_shown=1):
-        """
-        :param start_player: 先手玩家 ID
-        """
-        if start_player not in (1, 2):
-            raise Exception("start_player must be either 1 or 2")
-        self.board.init_board(start_player)
-        p1, p2 = 1, 2
-        player1.set_player_ind(1)
-        player2.set_player_ind(2)
-        players = {p1: player1, p2: player2}
-        if is_shown:
-            self.graphic(self.board, player1.player, player2.player)
-        
-        while True:
-            current_player = self.board.get_current_player_id()
-            player_in_turn = players[current_player]
-            move = player_in_turn.get_action(self.board)
-            self.board.do_move(move)
-            if is_shown:
-                self.graphic(self.board, player1.player, player2.player)
-            end, winner = self.board.game_end()
-            if end:
-                print("Game end. Winner is ", players[winner])
-                return winner
-
-    def start_self_play(self, player, is_shown=False, temp=1e-3):
-        """
-        开始自我博弈, 并收集数据
-        """
-        self.board.init_board()
-        states, mcts_probs, current_players = [], [], []
-        _count = 0
-        while True:
-            _count += 1
-            if _count % 20 == 0:
-                start_time = time.time()
-                move, moves_id2probs = player.get_action(self.board, temp=temp, return_prob=1)
-                print("走一步要花: ", time.time() - start_time)
-            else:
-                move, moves_id2probs = player.get_action(self.board, temp=temp, return_prob=1)
-            # 将当前棋盘添加至列表中
-            states.append(self.board.current_state())
-            # 将当前棋盘可行的走子及对应概率添加至列表中
-            mcts_probs.append(moves_id2probs)
-            # 将当前走子的玩家 ID 添加至列表中
-            current_players.append(self.board.current_player_id)
-            # 走子
-            self.board.do_move(move)
-            end, winner = self.board.game_end()
-            if end:
-                winner_z = np.ones(len(current_players))
-                winner_z[np.array(current_players) != winner] = -1.0
-                player.reset_player()
-                if is_shown:
-                    print("Game end. Winner is ", winner)
-                return winner, zip(states, mcts_probs, winner_z)
 
 
 if __name__ == '__main__':

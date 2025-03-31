@@ -4,8 +4,8 @@ from collections import deque
 
 import zip_array
 from config import CONFIG
-from game import Game, Board
-from mcts import MCTSPlayer
+from game import Board
+from mcts import MCTSPlayer, Game
 # from mcts_pure import MCTS_Pure
 
 # if CONFIG["use_frame"] == "paddle":
@@ -21,7 +21,7 @@ class TrainPipeline:
         self.game = Game(self.board)
         self.n_playout = CONFIG["play_out"]
         self.c_puct = CONFIG["c_puct"]
-        self.learn_rate = 1e-3
+        self.learn_rate = CONFIG["lr"]
         self.lr_multiplier = 1
         self.temp = 1.0
         self.batch_size = CONFIG["batch_size"]
@@ -73,7 +73,7 @@ class TrainPipeline:
         for i in range(self.epochs):
             t7 = time.perf_counter()
             loss, entropy = self.policy_value_net.train_step(
-                state_batch, mcts_probs_batch, winner_batch, self.learn_rate * self.lr_multiplier
+                state_batch, mcts_probs_batch, winner_batch, self.learn_rate# * self.lr_multiplier
             )
             t8 = time.perf_counter()
             print("train_step spend {} time".format(t8 - t7))
@@ -131,11 +131,8 @@ class TrainPipeline:
         except KeyboardInterrupt:
             print("\r\nquit")
 
-if CONFIG["use_frame"] == "paddle":
-    training_pipeline = TrainPipeline(init_model="current_policy.model")
-    training_pipeline.run()
-elif CONFIG["use_frame"] == "pytorch":
-    training_pipeline = TrainPipeline(init_model="current_policy.pkl")
+if CONFIG["use_frame"] == "pytorch":
+    training_pipeline = TrainPipeline(init_model=CONFIG['pytorch_model_path'])
     training_pipeline.run()
 else:
     print("暂不支持您选择的框架")
