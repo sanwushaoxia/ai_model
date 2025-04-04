@@ -1,7 +1,7 @@
 CONFIG = {
     "kill_action": 30,     # 和棋回合数, 当前实现判和棋为后手获胜
     "dirichlet": 0.2,      # Dirichlet Noise Parameter, 国际象棋 0.3; 日本将棋 0.15; 围棋 0.03
-    "play_out": 1200,      # MCTS 每轮探索次数
+    "play_out": 2500,      # MCTS 每轮探索次数
     "c_puct": 5,           # 权衡当前价值与潜在价值的参数, 其越大代表更看重潜在价值
     "buffer_size": 1000000, # 收集 data_buffer 的数量
     "paddle_model_path": "current_policy.model", # paddle 模型路径

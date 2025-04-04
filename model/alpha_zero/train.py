@@ -100,6 +100,8 @@ class TrainPipeline:
 
     def run(self):
         try:
+            entropy_min = 1e4
+            count = 0
             for i in range(self.game_batch_num):
                 print("load data begin")
                 while True:
@@ -117,6 +119,14 @@ class TrainPipeline:
                 # 这个判断条件没有意义, 后续删除
                 if len(self.data_buffer) > self.batch_size:
                     loss, entropy = self.policy_update()
+                    # 早期停止
+                    if (entropy < entropy_min):
+                        entropy_min = entropy
+                        count = 0
+                    else:
+                        count += 1
+                    if count > 10:
+                        break
                     # 保存模型
                     if CONFIG["use_frame"] == "paddle":
                         self.policy_value_net.save_model(CONFIG["paddle_model_path"])

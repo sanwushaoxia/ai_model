@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import torch
 import torch.nn as nn
@@ -114,21 +115,36 @@ class PolicyValueNet:
         """
         输入盘面, 返回走子到落子概率的映射以及盘面评估得分
         """
+        t0 = time.perf_counter()
         # eval 模式, 对 BatchNorm 等模块有影响
         self.policy_value_net.eval()
         # 获取当前盘面的合法走子 list
         moves_id_list = board.availables
+        t1 = time.perf_counter()
+        print("board.availables spend {} s.".format(t1 - t0))
         # board.current_state 为当前盘面, np.ascontiguousarray 为保证当前张量按 C 语言顺序在内存中存储
         current_state = np.ascontiguousarray(board.current_state().reshape(-1, 9, 10, 9)).astype('float16')
+        t2 = time.perf_counter()
+        print("np.ascontiguousarray spend {} s.".format(t2 - t1))
         current_state = torch.as_tensor(current_state).to(self.device)
+        t3 = time.perf_counter()
+        print("torch.as_tensor spend {} s.".format(t3 - t2))
 
         with autocast("cuda"):
             log_probs, score = self.policy_value_net(current_state)
+        t4 = time.perf_counter()
+        print("policy_value_net spend {} s.".format(t4 - t3))
         log_probs, score = log_probs.cpu(), score.cpu()
+        t5 = time.perf_counter()
+        print("to cpu spend {} s.".format(t5 - t4))
         # flatten 将数据拉成一维
         probs = np.exp(log_probs.detach().numpy().astype('float16').flatten())
+        t6 = time.perf_counter()
+        print("np.exp spend {} s.".format(t6 - t5))
         # moves_id2probs 为走子 id 到概率的映射
         moves_id2probs = zip(moves_id_list, probs[moves_id_list])
+        t7 = time.perf_counter()
+        print("zip spend {} s.".format(t7 - t6))
         return moves_id2probs, score.detach().numpy()
 
     def save_model(self, model_file):

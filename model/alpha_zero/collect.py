@@ -29,17 +29,11 @@ class CollectPipeline:
         self.buffer_size = CONFIG["buffer_size"]
         self.data_buffer = deque(maxlen=self.buffer_size)
         self.iters = 0
+        self.init_model = init_model
     
-    def load_model(self):
-        if CONFIG["use_frame"] == "paddle":
-            model_path = CONFIG["paddle_model_path"]
-        elif CONFIG["use_frame"] == "pytorch":
-            model_path = CONFIG["pytorch_model_path"]
-        else:
-            print("暂不支持所选框架")
-        
+    def load_model(self):        
         try:
-            self.policy_value_net = PolicyValueNet(model_file=model_path)
+            self.policy_value_net = PolicyValueNet(model_file=self.init_model)
             print("已加载最新模型")
         except:
             self.policy_value_net = PolicyValueNet()
