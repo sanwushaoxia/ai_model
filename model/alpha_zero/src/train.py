@@ -66,9 +66,9 @@ class TrainPipeline:
         t5 = time.perf_counter()
         print("winner_batch spend {} time".format(t5 - t4))
 
-        old_probs, old_v = self.policy_value_net.policy_value(state_batch)
-        t6 = time.perf_counter()
-        print("policy_value spend {} time".format(t6 - t5))
+        # old_probs, old_v = self.policy_value_net.policy_value(state_batch)
+        # t6 = time.perf_counter()
+        # print("policy_value spend {} time".format(t6 - t5))
 
         for i in range(self.epochs):
             t7 = time.perf_counter()
@@ -77,25 +77,28 @@ class TrainPipeline:
             )
             t8 = time.perf_counter()
             print("train_step spend {} time".format(t8 - t7))
-            new_probs, new_v = self.policy_value_net.policy_value(state_batch)
-            t9 = time.perf_counter()
-            print("policy_value spend {} time".format(t9 - t8))
+            # new_probs, new_v = self.policy_value_net.policy_value(state_batch)
+            # t9 = time.perf_counter()
+            # print("policy_value spend {} time".format(t9 - t8))
 
-            kl = np.mean(np.sum(old_probs * (np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)), axis=1))
-            if kl > self.kl_targ * 4:
-                break
-        t10 = time.perf_counter()
-        if kl > self.kl_targ * 2 and self.lr_multiplier > 0.1:
-            self.lr_multiplier /= 1.5
-        elif kl < self.kl_targ / 2 and self.lr_multiplier < 10:
-            self.lr_multiplier *= 1.5
-        explained_var_old = (1 - np.var(np.array(winner_batch) - old_v.flatten()) / np.var(np.array(winner_batch)))
-        explained_var_new = (1 - np.var(np.array(winner_batch) - new_v.flatten()) / np.var(np.array(winner_batch)))
-        print("kl:{:.5f},lr_multiplier:{:.3f},loss:{},entropy:{},explained_var_old:{:.9f},explained_var_new:{:.9f}".format(
-            kl, self.lr_multiplier, loss, entropy, explained_var_old, explained_var_new
+            # kl = np.mean(np.sum(old_probs * (np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)), axis=1))
+            # if kl > self.kl_targ * 4:
+            #     break
+        # t10 = time.perf_counter()
+        # if kl > self.kl_targ * 2 and self.lr_multiplier > 0.1:
+        #     self.lr_multiplier /= 1.5
+        # elif kl < self.kl_targ / 2 and self.lr_multiplier < 10:
+        #     self.lr_multiplier *= 1.5
+        # explained_var_old = (1 - np.var(np.array(winner_batch) - old_v.flatten()) / np.var(np.array(winner_batch)))
+        # explained_var_new = (1 - np.var(np.array(winner_batch) - new_v.flatten()) / np.var(np.array(winner_batch)))
+        # print("kl:{:.5f},lr_multiplier:{:.3f},loss:{},entropy:{},explained_var_old:{:.9f},explained_var_new:{:.9f}".format(
+        #     kl, self.lr_multiplier, loss, entropy, explained_var_old, explained_var_new
+        # ))
+        print("loss:{},entropy:{}".format(
+            loss, entropy
         ))
-        t11 = time.perf_counter()
-        print("output spend {} time".format(t11 - t10))
+        # t11 = time.perf_counter()
+        # print("output spend {} time".format(t11 - t10))
         return loss, entropy
 
     def run(self):

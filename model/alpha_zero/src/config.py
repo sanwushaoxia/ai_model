@@ -6,7 +6,7 @@ CONFIG = {
     "buffer_size": 1000000, # 收集 data_buffer 的数量
     "paddle_model_path": "current_policy.model", # paddle 模型路径
     "pytorch_model_path": "current_policy.pkl",  # pytorch 模型路径
-    "train_data_buffer_path": "train_data_buffer.pkl", # 训练数据路径
+    "train_data_buffer_path": "../train_data_buffer.pkl", # 训练数据路径
     "batch_size": 1024,
     "kl_targ": 0.02, # 控制 KL 散度的参数
     "epochs": 5,

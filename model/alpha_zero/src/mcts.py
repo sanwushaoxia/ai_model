@@ -118,19 +118,19 @@ class MCTS(object):
         进行一次搜索
         :param state: 盘面
         """
-        t0 = time.perf_counter()
+        # t0 = time.perf_counter()
         node = self._root
         while True:
             if node.is_leaf():
                 break
             moves_id, node = node.select(self._c_puct)
             state.do_move(moves_id)
-        t1 = time.perf_counter()
-        print("Select and move spend {} s.".format(t1 - t0))
+        # t1 = time.perf_counter()
+        # print("Select and move spend {} s.".format(t1 - t0))
         
         moves_id2probs, leaf_value = self._policy(state)
-        t2 = time.perf_counter()
-        print("Policy spend {} s.".format(t2 - t1))
+        # t2 = time.perf_counter()
+        # print("Policy spend {} s.".format(t2 - t1))
         end, winner = state.game_end()
         if not end:
             node.expand(moves_id2probs)
@@ -141,14 +141,14 @@ class MCTS(object):
                 leaf_value = (
                     1.0 if winner == state.get_current_player_id() else -1.0
                 )
-        t3 = time.perf_counter()
-        print("Expand spend {} s.".format(t3 - t2))
+        # t3 = time.perf_counter()
+        # print("Expand spend {} s.".format(t3 - t2))
         # 必须使用 -leaf_value 进行递归更新, 原因在于 state.do_move 后,
         # state.get_current_player_id 会更新, 即若 winner == current_player_id,
         # 则表示当前走子导致输棋, 当前节点对当前玩家的价值降低.
         node.update_recursive(-leaf_value)
-        t4 = time.perf_counter()
-        print("Update spend {} s.".format(t4 - t3))
+        # t4 = time.perf_counter()
+        # print("Update spend {} s.".format(t4 - t3))
 
     def get_move_probs(self, state: Board, temp=1e-3):
         """
@@ -156,24 +156,24 @@ class MCTS(object):
         :param state: 盘面
         :param temp: 介于(0, 1]之间的温度参数
         """
-        t0 = time.perf_counter()
+        # t0 = time.perf_counter()
         for _ in range(self._n_playout):
             state_copy = copy.deepcopy(state)
             self._playout(state_copy)
-        t1 = time.perf_counter()
-        print("Play out spend {} s".format(t1 - t0))
+        # t1 = time.perf_counter()
+        # print("Play out spend {} s".format(t1 - t0))
         
         act_visits = [(act, node._n_visits)
                       for act, node in self._root._children.items()]
-        t2 = time.perf_counter()
-        print("Generate act_visits spend {} s".format(t2 - t1))
+        # t2 = time.perf_counter()
+        # print("Generate act_visits spend {} s".format(t2 - t1))
         acts, visits = zip(*act_visits)
-        t3 = time.perf_counter()
-        print("Zip spend {} s".format(t3 - t2))
+        # t3 = time.perf_counter()
+        # print("Zip spend {} s".format(t3 - t2))
         # 依据通过多次探索得到的各节点访问次数生成概率
         act_probs = softmax(1.0 / temp * np.log(np.array(visits) + 1e-10))
-        t4 = time.perf_counter()
-        print("Softmax spend {} s".format(t4 - t3))
+        # t4 = time.perf_counter()
+        # print("Softmax spend {} s".format(t4 - t3))
         return acts, act_probs
 
     def update_with_move(self, last_move):

@@ -1,6 +1,7 @@
 import copy, time
 from collections import deque
 import numpy as np
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from config import CONFIG
 # from mcts import MCTSPlayer
 
@@ -381,6 +382,12 @@ def add_bing_moves(state_list, old_state_list, current_player_color, y, x, moves
                 if change_state(state_list, m) != old_state_list:
                     moves.append(m)
 
+def add_moves(args):
+    state_list, old_state_list, current_player_color, y, x, moves, mode = args
+    add_moves_func = [add_car_moves, add_horse_moves, add_elephant_moves,
+                      add_shi_moves, add_pao_moves, add_bing_moves]
+    add_moves_func[mode](state_list, old_state_list, current_player_color, y, x, moves)
+
 def get_legal_moves(state_deque, current_player_color):
     state_list = state_deque[-1] # 最新棋盘
     old_state_list = state_deque[-4]
@@ -397,6 +404,10 @@ def get_legal_moves(state_deque, current_player_color):
             if state_list[y][x] == '一一':
                 pass
             else:
+                # with ProcessPoolExecutor(max_workers=6) as executor:
+                #     results = list(executor.map(add_moves,
+                #                                 [[state_list, old_state_list, current_player_color, y, x, moves] + [i] for i in range(6)]))
+
                 add_car_moves(state_list, old_state_list, current_player_color, y, x, moves)
 
                 add_horse_moves(state_list, old_state_list, current_player_color, y, x, moves)
